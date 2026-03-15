@@ -11,8 +11,8 @@ permissions:
   contents: read
 
 jobs:
-  pre-commit:
-    name: Pre-commit Checks
+  lint:
+    name: Lint
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -23,8 +23,8 @@ jobs:
 
       - uses: pre-commit/action@v3.0.1
 
-  validate:
-    name: Validate Config
+  test:
+    name: Test
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
