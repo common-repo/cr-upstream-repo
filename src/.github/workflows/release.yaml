@@ -12,16 +12,12 @@ concurrency:
 
 permissions:
   contents: write
-  issues: write
-  pull-requests: write
 
 jobs:
   ci:
     name: CI
     permissions:
-      issues: write
-      contents: write
-      pull-requests: write
+      contents: read
     uses: ./.github/workflows/ci.yaml
     secrets: inherit
 
