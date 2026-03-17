@@ -23,8 +23,8 @@ jobs:
 
       - uses: pre-commit/action@v3.0.1
 
-  test:
-    name: Test
+  validate:
+    name: Validate
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -33,3 +33,19 @@ jobs:
 
       - name: Validate configuration
         run: common-repo validate
+
+  test:
+    name: Test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.x"
+
+      - name: Install test dependencies
+        run: pip install pyyaml
+
+      - name: Run tests
+        run: script/test
