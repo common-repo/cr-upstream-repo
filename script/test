@@ -1,0 +1,74 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+REPO_ROOT="$(cd "$(dirname "$0")/.." && pwd)"
+cd "$REPO_ROOT"
+
+failures=0
+tests=0
+
+pass() { tests=$((tests + 1)); echo "  PASS: $1"; }
+fail() { tests=$((tests + 1)); failures=$((failures + 1)); echo "  FAIL: $1"; }
+
+echo "==> Validating .common-repo.yaml structure"
+
+# Check .common-repo.yaml parses as valid YAML
+if python3 -c "import yaml, sys; yaml.safe_load(open('.common-repo.yaml'))" 2>/dev/null; then
+  pass ".common-repo.yaml is valid YAML"
+else
+  fail ".common-repo.yaml is not valid YAML"
+fi
+
+echo "==> Checking template vars match between config and workflow"
+
+# Extract template vars defined in .common-repo.yaml
+config_vars=$(grep -A 100 '^- template-vars:' .common-repo.yaml | tail -n +2 | grep '^\s\+\w' | awk -F: '{print $1}' | tr -d ' ')
+
+# Check each var has a ${VAR:-default} reference in the template source
+for var in $config_vars; do
+  if grep -q "\${${var}:-" src/.github/workflows/release.yaml; then
+    pass "template var $var found in src release workflow"
+  else
+    fail "template var $var missing from src release workflow"
+  fi
+done
+
+echo "==> Checking src/ contains all distributed files"
+
+# Files listed in README "What's Included" table (after rename, so without src/ prefix)
+expected_files=(
+  ".pre-commit-config.yaml"
+  ".github/workflows/ci.yaml"
+  ".github/workflows/commitlint.yml"
+  ".github/workflows/release.yaml"
+  ".releaserc.yaml"
+  "commitlint.config.cjs"
+)
+
+for f in "${expected_files[@]}"; do
+  if [ -f "src/$f" ]; then
+    pass "src/$f exists"
+  else
+    fail "src/$f missing"
+  fi
+done
+
+echo "==> Checking workflow YAML validity"
+
+for f in src/.github/workflows/*.y*ml .github/workflows/*.y*ml; do
+  if [ -f "$f" ]; then
+    if python3 -c "import yaml, sys; yaml.safe_load(open('$f'))" 2>/dev/null; then
+      pass "$f is valid YAML"
+    else
+      fail "$f is not valid YAML"
+    fi
+  fi
+done
+
+echo ""
+echo "--- Results: $((tests - failures))/$tests passed ---"
+if [ "$failures" -gt 0 ]; then
+  echo "FAILED"
+  exit 1
+fi
+echo "OK"
